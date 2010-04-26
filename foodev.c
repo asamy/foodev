@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+
+void udev_device_add_event(struct udev_device*);
+void udev_device_remove_event(struct udev_device*);
 
 int main(void) {
   struct udev *udev;
@@ -39,7 +43,6 @@ int main(void) {
 
     /* found a udev event */
     if (pfd[0].revents & POLLIN) {
-      printf("inside if\n");
 
       device = udev_monitor_receive_device(monitor);
       if (device == NULL) {
@@ -47,9 +50,12 @@ int main(void) {
         continue;
       }
 
-      printf("%s (%s)\n",
-              udev_device_get_action(device),
-              udev_device_get_devnode(device));
+      const char *action = udev_device_get_action(device);
+      if (strcmp(action, "add") == 0)
+        udev_device_add_event(device);
+      else if (strcmp(action, "remove") == 0)
+        udev_device_remove_event(device);
+
       udev_device_unref(device);
     }
 
@@ -64,4 +70,20 @@ int main(void) {
 
   return 0;
 
+}
+
+void udev_device_add_event(struct udev_device *device) {
+  printf("in udev_device_add_event\n");
+  const char *product = udev_device_get_sysattr_value(device, "product");
+  const char *driver = udev_device_get_driver(device);
+  const char *devnode = udev_device_get_devnode(device);
+
+  printf("Dev Node: %s\n", devnode);
+  printf("Product: %s\n", product);
+  printf("Driver: %s\n", driver);
+
+}
+
+void udev_device_remove_event(struct udev_device *device) {
+  printf("in udev_device_remove_event\n");
 }
