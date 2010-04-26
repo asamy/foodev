@@ -35,6 +35,7 @@ void udev_device_remove_event(struct udev_device*);
 int main(void) {
   struct udev *udev;
   struct udev_monitor *monitor;
+  struct udev_device *device;
 
   /* create contexts */
   udev = udev_new();
@@ -44,19 +45,17 @@ int main(void) {
   udev_monitor_filter_add_match_subsystem_devtype(monitor, "usb", NULL); 
   udev_monitor_enable_receiving(monitor);
 
+  /* create polling structs. ensuing while loop will sleep until we receive a wakeup
+   * from one of these fd numbers
+   */
+  struct pollfd pfd[2];
+  pfd[0].fd = udev_monitor_get_fd(monitor);
+  pfd[0].events = POLLIN;
+  pfd[1].fd = STDIN_FILENO;
+  pfd[1].events = POLLIN;
+
   printf("Entering poll loop -- ^D to end\n");
   while (1) {
-    struct pollfd pfd[2];
-    struct udev_device *device;
-
-    /* poll on udev's socket */
-    pfd[0].fd = udev_monitor_get_fd(monitor);
-    pfd[0].events = POLLIN;
-
-    /* poll on STDIN so we can quit on key input */
-    pfd[1].fd = STDIN_FILENO;
-    pfd[1].events = POLLIN;
-
     /* block until we get an event */
     if (poll(pfd, 2, -1) < 1)
       continue;
@@ -112,3 +111,4 @@ void udev_device_add_event(struct udev_device *device) {
 void udev_device_remove_event(struct udev_device *device) {
   printf("in udev_device_remove_event\n"); /* hello! */
 }
+
