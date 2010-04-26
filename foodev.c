@@ -8,14 +8,16 @@ int main(void) {
   struct udev *udev;
   struct udev_monitor *monitor;
 
-  /*
-  struct udev_enumerate *enumerate;
-  struct udev_list_entry *list_entry;
-  */
-
-  /* create a new context of udev and get a monitor ref */
+  /* create contexts */
   udev = udev_new();
   monitor = udev_monitor_new_from_netlink(udev, "udev");
+  /* enumerate = udev_enumerate_new(udev); */
+
+  /* Listen for events */
+  udev_monitor_filter_add_match_subsystem_devtype(monitor, "usb", NULL); 
+
+  /* Listen to events */
+  udev_monitor_enable_receiving(monitor);
 
   printf("Entering poll loop -- ^D to end\n");
   while (1) {
@@ -25,6 +27,7 @@ int main(void) {
     /* poll on udev's socket */
     pfd[0].fd = udev_monitor_get_fd(monitor);
     pfd[0].events = POLLIN;
+
 
     /* poll on STDIN so we can quit */
     pfd[1].fd = STDIN_FILENO;
@@ -36,24 +39,21 @@ int main(void) {
 
     /* found a udev event */
     if (pfd[0].revents & POLLIN) {
-      const char *cap;
+      printf("inside if\n");
 
       device = udev_monitor_receive_device(monitor);
-      if (device == NULL)
+      if (device == NULL) {
+        fprintf(stderr, "DEBUG: device == NULL\n");
         continue;
+      }
 
-      cap = udev_device_get_property_value(device, "ID_VENDOR");
-      if (cap == NULL)
-        continue;
-
-      printf("%s (%s) (%s)\n",
-        udev_device_get_property_value(device, "ID_VENDOR"),
-        udev_device_get_devnode(device),
-        udev_device_get_action(device));
+      printf("%s (%s)\n",
+              udev_device_get_action(device),
+              udev_device_get_devnode(device));
       udev_device_unref(device);
     }
 
-    /* console input, we're done */
+    /* console input, we're done  */
     if (pfd[1].revents & POLLIN)
       break;
   }
