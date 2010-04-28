@@ -42,7 +42,8 @@ int main(void) {
   monitor = udev_monitor_new_from_netlink(udev, "udev");
 
   /* Listen for events */
-  udev_monitor_filter_add_match_subsystem_devtype(monitor, "usb", NULL); 
+  //udev_monitor_filter_add_match_subsystem_devtype(monitor, "usb", NULL); 
+  udev_monitor_filter_add_match_subsystem_devtype(monitor, "block", NULL); 
   udev_monitor_enable_receiving(monitor);
 
   /* create polling structs. ensuing while loop will sleep until we receive a wakeup
@@ -96,19 +97,38 @@ int main(void) {
 }
 
 void udev_device_add_event(struct udev_device *device) {
-  printf("in udev_device_add_event\n"); /* hello! */
+  /* Order of operations:
+   * - find an event relating to a block device with a partition number
+   * - get the filesystem, uuid and label of the new device
+   * - check config struct for ignores based on FS, UUID, or label
+   * - get default mount options
+   * - get FS specific options
+   * - determine mount location (get basedir from config and dir naming preference)
+   * - create mount directory (if needed)
+   * - mount it!
+   * - add signature to lock file
+   */
 
+  printf("in udev_device_add_event\n"); /* hello! */
+  const char *devnode = udev_device_get_devnode(device);
+  if (strstr(devnode, "/dev/sd") || strstr(devnode, "/dev/hd"))
+    printf("Dev Node: %s\n", devnode);
+
+  /*
   const char *product = udev_device_get_sysattr_value(device, "product");
   const char *driver = udev_device_get_driver(device);
-  const char *devnode = udev_device_get_devnode(device);
-
-  printf("Dev Node: %s\n", devnode);
   printf("Product: %s\n", product);
   printf("Driver: %s\n", driver);
-
+  */
 }
 
 void udev_device_remove_event(struct udev_device *device) {
+  /* Order of operations:
+   * - find an event relating to a block device with a partition number
+   * - confirm its in our lock file
+   * - unmount
+   * - remove mount directory (if empty)
+   */
   printf("in udev_device_remove_event\n"); /* hello! */
 }
 
