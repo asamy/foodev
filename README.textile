@@ -1,4 +1,3 @@
 h2. foodev
 
-A quick and dirty example of how to monitor for events with libudev. This may eventually
-turn into an automounting daemon, similar to skvm.
+A quick and dirty example of how to monitor for events with libudev.
